@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pxlaplace"
+version = "0.1.0"
+description = "p(x)-Laplacian solver: decomposition-coordination method with P1 finite elements on general 2D domains"
+requires-python = ">=3.9"
+dependencies = ["numpy", "scipy", "matplotlib"]
+[project.optional-dependencies]
+meshing = ["triangle", "meshio"]
+test = ["pytest", "triangle", "meshio"]
+
+[tool.setuptools]
+packages = ["pxlaplace"]
