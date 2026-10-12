@@ -5,7 +5,7 @@
 Python implementation of the **decomposition–coordination method** for the Dirichlet problem
 
 $$
--\operatorname{div}\!\big(|\nabla u|^{p(x)-2}\nabla u\big)=f \ \text{ in }\Omega\subset\mathbb R^2,\qquad u=g\ \text{ on }\partial\Omega ,
+-\mathrm{div}\!\big(|\nabla u|^{p(x)-2}\nabla u\big)=f \ \text{ in }\Omega\subset\mathbb R^2,\qquad u=g\ \text{ on }\partial\Omega ,
 $$
 
 with piecewise-linear (P1) finite elements. It is a vectorised port of the MatLab code that accompanies
@@ -19,7 +19,7 @@ The original code worked on rectangles only; here **the solver is independent of
 ```
 pxlaplace/            the package (mesh.py, fem.py, nonlinear.py, solver.py)
 notebooks/            pxlaplace_colab.ipynb  -> self-contained notebook, opens in Google Colab
-examples/             paper_examples.py      -> Examples 1-5 of the paper
+examples/             paper_examples.py (Examples 1-5 of the paper), torsion_disk.py (disk vs explicit solution)
 tests/                pytest suite
 paper/                the paper (.tex and .pdf)
 docs/                 figures
@@ -29,7 +29,7 @@ docs/                 figures
 
 With $r>0$ (the paper uses $r=1$), starting from $\nu_0,\eta_1$ (zero by default), iterate:
 
-1. **Linear PDE** (same matrix every step): $\ -r\Delta u_n=f+\operatorname{div}(\eta_n-r\nu_{n-1})$, $u_n=g$ on $\partial\Omega$.
+1. **Linear PDE** (same matrix every step): $\ -r\Delta u_n=f+\mathrm{div}(\eta_n-r\nu_{n-1})$, $u_n=g$ on $\partial\Omega$.
 2. **Pointwise algebraic equation**: $\ |\nu_n|^{p-2}\nu_n+r\nu_n=\eta_n+r\nabla u_n$. Writing $t=|\nu_n|$ this is the scalar equation $t^{p-1}+rt=r|\eta_n/r+\nabla u_n|$, which has a unique root; $\nu_n$ has the direction of $\eta_n+r\nabla u_n$.
 3. **Multiplier update**: $\ \eta_{n+1}=\eta_n+r(\nabla u_n-\nu_n)$.
 
@@ -130,6 +130,32 @@ python examples/paper_examples.py --plot        # Examples 1-5, prints errors, w
 | 5: discontinuous $p\in\{1.2,4\}$ | 43 | – | – | – |
 
 (Tolerances: 1e-6 for Examples 1, 4, 5; 1e-7 for Example 3; `stop="p_error"`, 1e-8 for Example 2.)
+
+## p-torsion problem on the unit disk (comparison with the explicit solution)
+
+For $-\Delta_p u=1$ in $B_1$, $u=0$ on $\partial B_1$ the solution is explicit,
+$u(x,y)=c_p\,(1-r^{p/(p-1)})$, $c_p=\frac{p-1}{p}\,2^{-1/(p-1)}$, $r=\sqrt{x^2+y^2}$.
+`examples/torsion_disk.py` meshes the disk (`disk_mesh(h)`), solves with the method and compares with this formula
+for several exponents under mesh refinement:
+
+```bash
+python examples/torsion_disk.py --plot                 # p = 1.5, 2, 4, 10; figure for p = 4
+python examples/torsion_disk.py --p 3 --ps 1.2 3 --h 0.1 0.05 0.025 --plot
+```
+
+![torsion disk](docs/torsion_disk.png)
+
+Errors ($h$ = target edge length, `stop="p_error"`, tol 1e-9):
+
+| p | h=0.2 | h=0.1 | h=0.05 | h=0.025 | $\lVert u-u_h\rVert_\infty$ order (last step) |
+|---|---|---|---|---|---|
+| 1.5 | 7.4e-4 | 3.0e-4 | 6.7e-5 | 1.8e-5 | 1.9 |
+| 2 (Poisson) | 1.8e-3 | 4.1e-4 | 9.7e-5 | 2.4e-5 | 2.0 |
+| 4 | 3.7e-3 | 2.0e-3 | 6.7e-4 | 1.9e-4 | 1.8 |
+| 10 | 3.4e-3 | 2.4e-3 | 9.9e-4 | 5.4e-4 | 0.9 |
+
+The error is concentrated at the origin, where $u$ is only $C^{1,\alpha}$ for $p\neq2$ (regularity degrades as $p$ grows), so the observed
+order in $L^\infty$ can be below 2 for large $p$; in $L^2$ it is about 2. The $p=2$ row recovers the standard P1 rate.
 
 ## Tests
 
