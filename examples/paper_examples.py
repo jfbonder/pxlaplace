@@ -9,11 +9,14 @@ from pxlaplace import rectangle_mesh, PxLaplaceSolver, P1Space
 
 
 def report(name, mesh, res, ue=None, p=None):
+    """ue: exact solution as a function (x, y).  Errors are those AT THE STOPPING TIME (they contain an
+    iteration error; see README).  sup error: maximum over the nodes; L2 error: true (quadrature) error."""
     fem = P1Space(mesh)
     s = f"{name}: {res.iterations} it, converged={res.converged}, {res.time_iter:.2f}s (+{res.time_setup:.2f}s setup)"
     if ue is not None:
-        e = res.u - ue
-        s += f"\n   ||u-uh||_inf = {fem.norm_inf(e):.2e},  ||u-uh||_p = {fem.norm_Lp(e, p):.2e}"
+        uen = ue(*mesh.vertices.T)
+        s += (f"\n   sup error (nodes) = {fem.norm_inf(res.u - uen):.2e} (relative {fem.norm_inf(res.u - uen) / fem.norm_inf(uen):.2e}),"
+              f"  relative L2 error = {fem.l2_error(res.u, ue):.2e}")
     print(s)
 
 
@@ -22,7 +25,7 @@ def example1(n=100, tol=1e-6, **kw):
     ex = lambda x, y: (x**2 + y**2) ** ((p - 2) / (2 * p - 2))
     m = rectangle_mesh(n, n, 0, 1, 0, 1)
     res = PxLaplaceSolver(m, p, 0.0, ex).solve(tol=tol, **kw)
-    return m, res, ex(*m.vertices.T), p
+    return m, res, ex, p
 
 
 def example2(n=100, tol=1e-8, **kw):
@@ -32,7 +35,7 @@ def example2(n=100, tol=1e-8, **kw):
     a = 1 / np.sqrt(2)
     m = rectangle_mesh(n, n, -a, a, -a, a)
     res = PxLaplaceSolver(m, p, 1.0, ex).solve(tol=tol, **{'stop': 'p_error', **kw})
-    return m, res, ex(*m.vertices.T), p
+    return m, res, ex, p
 
 
 def example3(n=100, tol=1e-7, **kw):
@@ -40,7 +43,7 @@ def example3(n=100, tol=1e-7, **kw):
     ex = lambda x, y: np.sqrt(2) * np.e**2 * (np.exp(0.5 * (x + y)) - 1)
     m = rectangle_mesh(n, n, -1, 1, -1, 1)
     res = PxLaplaceSolver(m, pf, 0.0, ex).solve(tol=tol, **kw)
-    return m, res, ex(*m.vertices.T), PxLaplaceSolver(m, pf).p
+    return m, res, ex, PxLaplaceSolver(m, pf).p
 
 
 def example4(n=100, ps=(1.15, 4.0, 50.0), tol=1e-6, **kw):

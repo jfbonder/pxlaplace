@@ -43,7 +43,7 @@ res = solver.solve(tol=1e-7)                                   # iterate
 fem = P1Space(mesh)
 e = res.u - ex(*mesh.vertices.T)
 print(f"{res.iterations} iterations, converged={res.converged}, {res.time_iter:.1f}s")
-print("||u-uh||_inf =", fem.norm_inf(e), "  ||u-uh||_p =", fem.norm_Lp(e, solver.p))
+print("sup error at nodes =", fem.norm_inf(e), "  true relative L2 error =", fem.l2_error(res.u, ex))
 mesh.plot(res.u); plt.title("computed solution"); plt.show()
 """)
 md("""
@@ -67,7 +67,7 @@ ex1 = lambda x, y: (x**2 + y**2)**((p-2)/(2*p-2))
 m = rectangle_mesh(100, 100)
 r1 = PxLaplaceSolver(m, p, 0.0, ex1).solve(tol=1e-6)
 e = r1.u - ex1(*m.vertices.T); F = P1Space(m)
-print(r1.iterations, 'it;', f'{r1.time_iter:.1f}s;', 'inf err', F.norm_inf(e), 'p err', F.norm_Lp(e, p))
+print(r1.iterations, 'it;', f'{r1.time_iter:.1f}s;', 'sup error (nodes)', F.norm_inf(e), 'true rel. L2 error', F.l2_error(r1.u, ex1))
 m.plot(r1.u); plt.title('Example 1'); plt.show()
 """)
 code("""

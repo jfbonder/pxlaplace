@@ -27,7 +27,7 @@ def run(p, h0, tol=1e-9):
     fem = P1Space(mesh)
     e = res.u - ue(*mesh.vertices.T)
     return dict(mesh=mesh, res=res, ue=ue, h=h0, nodes=mesh.n_nodes, it=res.iterations,
-                inf=fem.norm_inf(e), L2=fem.norm_L2(e), umax=ue(0.0, 0.0), emax=e)
+                inf=fem.norm_inf(e), L2=fem.l2_error(res.u, ue, relative=False), umax=ue(0.0, 0.0), emax=e)
 
 
 def order(a, b, ha, hb):
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     results = {}
     for p in sorted(set(a.ps) | {a.p}):
         print(f"\np = {p}   (u(0) = {exact(p)(0., 0.):.5f})")
-        print(f"{'h':>7} {'nodes':>7} {'iter':>5} {'||u-uh||_inf':>13} {'order':>6} {'||u-uh||_2':>12} {'order':>6}")
+        print(f"{'h':>7} {'nodes':>7} {'iter':>5} {'nodal sup err':>13} {'order':>6} {'true L2 err':>12} {'order':>6}")
         rows = []
         for h in a.h:
             r = run(p, h)

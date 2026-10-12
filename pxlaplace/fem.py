@@ -38,8 +38,9 @@ class P1Space:
 
     # ---- linear forms --------------------------------------------------
     def load_vector(self, f, degree: int = 1) -> np.ndarray:
-        """b_i = int f phi_i.  degree=1: barycentre rule (as in the MatLab code,
-        exact for f in P1); degree=2: 3-point edge-midpoint rule (exact for P2)."""
+        """b_i = int f phi_i.  degree=1: one-point barycentre rule (as in the MatLab code;
+        exact only for constant f, O(h^2)-consistent); degree=2: 3-point edge-midpoint rule
+        (exact for f in P2)."""
         V, T = self.mesh.vertices, self.mesh.triangles
         b = np.zeros(self.Nn)
         if degree == 1:
@@ -84,11 +85,47 @@ class P1Space:
         return float(np.sum(self.area * np.mean(np.abs(mid) ** p[:, None], axis=1)))
 
     def norm_L2(self, w) -> float:
+        """L2 norm of the P1 function with nodal values w.  NOTE: applied to u_h - u(nodes) this is
+        ||u_h - I_h u||, not the error ||u_h - u||; use :meth:`l2_error` for the latter."""
         return self.modular(w, 2.0) ** 0.5
 
     def norm_Lp(self, w, p) -> float:
         p = np.asarray(p, float)
         return self.modular(w, p) ** (1.0 / float(np.max(p)))
+
+    # ---- TRUE errors against an exact solution (quadrature, not nodal) --------
+    _QL = np.array([[0.445948490915965, 0.445948490915965, 0.108103018168070],
+                    [0.445948490915965, 0.108103018168070, 0.445948490915965],
+                    [0.108103018168070, 0.445948490915965, 0.445948490915965],
+                    [0.091576213509771, 0.091576213509771, 0.816847572980459],
+                    [0.091576213509771, 0.816847572980459, 0.091576213509771],
+                    [0.816847572980459, 0.091576213509771, 0.091576213509771]])
+    _QW = np.array([0.223381589678011] * 3 + [0.109951743655322] * 3)     # Dunavant degree-4 rule
+
+    def _qpoints(self):
+        P = self.mesh.vertices[self.mesh.triangles]                       # (Nt,3,2)
+        return self._QL @ P[:, :, 0].T, self._QL @ P[:, :, 1].T            # each (6,Nt)
+
+    def l2_error(self, uh, u_exact, relative=True) -> float:
+        """||u - u_h||_{L2(Omega_h)} with a degree-4 rule on every triangle (this is the TRUE error;
+        ``norm_L2`` of the nodal difference only measures ||I_h u - u_h||, which can be much smaller)."""
+        X, Y = self._qpoints()
+        ue = np.asarray(u_exact(X, Y), float)
+        uhq = self._QL @ uh[self.mesh.triangles].T
+        num = np.sqrt(np.sum(self.area * (self._QW @ (ue - uhq) ** 2)))
+        den = np.sqrt(np.sum(self.area * (self._QW @ ue**2))) if relative else 1.0
+        return float(num / den)
+
+    def grad_error_Lp(self, uh, grad_exact, p, relative=True) -> float:
+        """||grad(u - u_h)||_{L^p(Omega_h)} (p scalar or element-wise array; for variable p the modular
+        (int |.|^p)^(1/max p) is returned), degree-4 rule.  grad_exact(x, y) -> (ux, uy)."""
+        X, Y = self._qpoints()
+        ex, ey = grad_exact(X, Y)
+        gx, gy = self.gradient(uh)
+        p = np.broadcast_to(np.asarray(p, float), (self.Nt,))
+        err = np.sum(self.area * (self._QW @ (np.hypot(ex - gx, ey - gy) ** p)))
+        den = np.sum(self.area * (self._QW @ (np.hypot(ex, ey) ** p))) if relative else 1.0
+        return float((err / den) ** (1.0 / float(np.max(p))))
 
     @staticmethod
     def norm_inf(w) -> float:

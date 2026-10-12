@@ -27,7 +27,7 @@ def rho_fit(h, lo=1e-6, hi=1e-3):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ps", type=float, nargs="+", default=[6, 4, 3, 2.5, 1.8, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.05])
+    ap.add_argument("--ps", type=float, nargs="+", default=[6, 4, 3, 2.5, 2, 1.8, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.05])
     ap.add_argument("--h", type=float, default=0.05)
     ap.add_argument("--max-iter", type=int, default=6000)
     ap.add_argument("--plot", action="store_true")
@@ -54,7 +54,7 @@ if __name__ == "__main__":
                 ax[0].semilogy(ru, label=f"p={p:g}"); ax[1].semilogy(r, label=f"p={p:g}")
         ax[0].set_title("rel_u"); ax[1].set_title("primal residual")
         for x in ax[:2]: x.legend(); x.set_xlabel("iteration")
-        ps = [q[0] for q in rows] + [2.0]; rho = [q[4] for q in rows] + [0.0]
-        o = np.argsort(ps); ax[2].plot(np.array(ps)[o], np.array(rho)[o], "o-"); ax[2].set_xscale("log")
-        ax[2].set_xlabel("p"); ax[2].set_title(r"contraction factor $\rho(p)$ (p=2: exact in 2 its)")
+        ps = np.array([q[0] for q in rows]); rho = np.array([q[4] for q in rows]); o = np.argsort(ps)
+        ax[2].plot(ps[o], rho[o], "o-"); ax[2].set_xscale("log")
+        ax[2].set_xlabel("p"); ax[2].set_title(r"contraction factor $\rho(p)$ of the residual (p=2: 1/2)")
         plt.tight_layout(); plt.savefig("p_to_1_iteration.png", dpi=110)

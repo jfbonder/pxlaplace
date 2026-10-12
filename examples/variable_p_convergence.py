@@ -8,7 +8,7 @@ Cases
              --prad jump : p = 1.5 (r<0.5), 3 (r>=0.5)       --prad lin : p = 1.5 + 1.5 r
   example3 : Example 3 of the paper on (-1,1)^2 (p = 1+1/((x+y)/2+2), exact solution known) refined on squares.
 
-Prints relative L2 / sup errors and the observed order t (least squares over the finest --fit meshes).
+Prints the true relative L2 error (quadrature) and the nodal sup error and the observed order t (least squares over the finest --fit meshes).
 
 Run:  python examples/variable_p_convergence.py smooth|radial|example3 [--prad jump|lin] [--plot]
 """
@@ -61,8 +61,9 @@ def run(mesh, p, u, f, tol, max_iter, f_degree=1):
     fem = P1Space(mesh)
     ue = u(*mesh.vertices.T)
     e = res.u - ue
+    # L2 is the TRUE relative error (quadrature); sup is the max over the nodes only (nodal sup error)
     return dict(nodes=mesh.n_nodes, it=res.iterations, conv=bool(res.converged),
-                L2=fem.norm_L2(e) / fem.norm_L2(ue), sup=fem.norm_inf(e) / fem.norm_inf(ue))
+                L2=fem.l2_error(res.u, u), sup=fem.norm_inf(e) / fem.norm_inf(ue))
 
 
 def order(h, err, k):
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     else:
         p, u, f = example3_problem(); hs = a.h or [10, 20, 40, 80, 160]; fdeg = 1
     rows = []
-    print(f"{'h':>8} {'nodes':>7} {'iter':>5} {'conv':>5} {'L2 rel':>10} {'ord':>5} {'sup rel':>10} {'ord':>5}")
+    print(f"{'h':>8} {'nodes':>7} {'iter':>5} {'conv':>5} {'L2 rel':>10} {'ord':>5} {'sup(nodes)':>10} {'ord':>5}")
     for i, h in enumerate(hs):
         mesh = rectangle_mesh(int(h), int(h), -1, 1, -1, 1) if a.case == "example3" else disk_mesh(h)
         hh = 2.0 / h if a.case == "example3" else h

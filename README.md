@@ -10,7 +10,7 @@ $$
 
 with piecewise-linear (P1) finite elements. It is a vectorised port of the MatLab code that accompanies
 
-> A. Aragón, J. Fernández Bonder, D. Rubio, *Effective numerical computation of p(x)-Laplace equations in 2D* (paper in [`paper/`](paper)).
+> A. Aragón, J. Fernández Bonder, D. Rubio, *Effective numerical computation of p(x)-Laplace equations in 2D* (paper in [`paper/`](paper)). A rewritten, updated version of the paper (new implementation and experiments) is in [`paper/v2/`](paper/v2).
 
 The original code worked on rectangles only; here **the solver is independent of the domain**: it only needs a triangulation.
 
@@ -88,7 +88,7 @@ mesh.plot(res.u)                                      # res.u: nodal values
 
 The returned `SolveResult` has `u`, `nu`, `eta` (element-wise vector fields), `iterations`, `converged`, `time_setup`, `time_iter` and `history` with per-iteration arrays `rel_u`, `p_error`, `residual` ($\lVert\nabla u-\nu\rVert_{L^2}$) and `energy`.
 
-Error helpers in `P1Space(mesh)`: `norm_inf`, `norm_L2`, `norm_Lp(w, p)`, `modular(w, p)`, `gradient(u)`.
+Error helpers in `P1Space(mesh)`: `norm_inf`, `norm_L2`, `norm_Lp(w, p)`, `modular(w, p)`, `gradient(u)`; and, for the **true** finite-element errors (degree-4 quadrature), `l2_error(uh, u_exact)` and `grad_error_Lp(uh, grad_exact, p)`. Note that `norm_L2`/`norm_Lp` applied to nodal differences measure $\lVert I_hu-u_h\rVert$, which is *not* the FE error (supercloseness makes it much smaller).
 
 ### Meshes / general domains
 
@@ -121,15 +121,18 @@ python examples/paper_examples.py --plot        # Examples 1-5, prints errors, w
 
 100×100 grid (Example 5: 200×100), P1 elements:
 
-| Example | iterations | $\lVert u-u_h\rVert_\infty$ | $\lVert u-u_h\rVert_p$ | paper (∞ / p) |
+| Example | iterations | sup error at nodes (abs / rel) | true relative $L^2$ error | paper (sup) |
 |---|---|---|---|---|
-| 1: $p=20$, $u=(x^2+y^2)^{\frac{p-2}{2p-2}}$ | 560 | 1.2e-3 | 5.7e-4 | 2e-3 / 1e-3 |
-| 2: torsion $p=1.1$, exact solution | 522 | 1.4e-5 | 5.9e-6 | 2e-4 / 3e-4 (see note 3) |
-| 3: $p(x,y)=1+(\frac{x+y}{2}+2)^{-1}$ | 87 | 1.9e-5 | 2.7e-4 | 1.5e-5 / 2.7e-4 |
+| 1: $p=20$, $u=(x^2+y^2)^{\frac{p-2}{2p-2}}$ | 560 | 1.2e-3 / 8.9e-4 | 3.0e-4 | 2e-3 |
+| 2: torsion $p=1.1$, exact solution | 522 | 1.4e-5 / **16%** (see note 3) | 5.0e-2 | 2e-4 |
+| 3: $p(x,y)=1+(\frac{x+y}{2}+2)^{-1}$ | 87 | 1.9e-5 / 1.1e-6 | 2.4e-5 | 1.5e-5 |
 | 4: torsion, $p=1.15,\,4,\,50$ | 378, 40, 132 | – | – | – |
 | 5: discontinuous $p\in\{1.2,4\}$ | 43 | – | – | – |
 
-(Tolerances: 1e-6 for Examples 1, 4, 5; 1e-7 for Example 3; `stop="p_error"`, 1e-8 for Example 2.)
+(Tolerances: 1e-6 for Examples 1, 4, 5; 1e-7 for Example 3; `stop="p_error"`, 1e-8 for Example 2.) "True" $L^2$ errors are computed
+with a degree-4 quadrature rule on each triangle (`P1Space.l2_error`), not from nodal differences (see the note on error measures below).
+The Example 1-2 errors are dominated by the iteration (stopping) error as much as by the discretisation; Example 2 is a very small solution
+($\max u\approx 9\times10^{-5}$) and the absolute criterion `p_error` is not adequate for it: after 4000 iterations the error was still moving (1.3%).
 
 ## p-torsion problem on the unit disk (comparison with the explicit solution)
 
@@ -145,17 +148,22 @@ python examples/torsion_disk.py --p 3 --ps 1.2 3 --h 0.1 0.05 0.025 --plot
 
 ![torsion disk](docs/torsion_disk.png)
 
-Errors ($h$ = target edge length, `stop="p_error"`, tol 1e-9):
+Errors ($h$ = target edge length, `stop="p_error"`, tol 1e-9); `sup` is the maximum over the nodes of $|u-u_h|$ and $L^2$ is the true
+$L^2(B_1)$ error computed by quadrature:
 
-| p | h=0.2 | h=0.1 | h=0.05 | h=0.025 | $\lVert u-u_h\rVert_\infty$ order (last step) |
+| p | h=0.2 | h=0.1 | h=0.05 | h=0.025 | order (last step) |
 |---|---|---|---|---|---|
-| 1.5 | 7.4e-4 | 3.0e-4 | 6.7e-5 | 1.8e-5 | 1.9 |
-| 2 (Poisson) | 1.8e-3 | 4.1e-4 | 9.7e-5 | 2.4e-5 | 2.0 |
-| 4 | 3.7e-3 | 2.0e-3 | 6.7e-4 | 1.9e-4 | 1.8 |
-| 10 | 3.4e-3 | 2.4e-3 | 9.9e-4 | 5.4e-4 | 0.9 |
+| 1.5, $L^2$ | 3.5e-3 | 7.9e-4 | 1.8e-4 | 4.6e-5 | 2.0 |
+| 1.5, sup (nodes) | 7.4e-4 | 3.0e-4 | 6.7e-5 | 1.8e-5 | 1.9 |
+| 2, $L^2$ | 5.4e-3 | 1.3e-3 | 2.9e-4 | 7.4e-5 | 2.0 |
+| 2, sup (nodes) | 1.8e-3 | 4.1e-4 | 9.7e-5 | 2.4e-5 | 2.0 |
+| 4, $L^2$ | 8.7e-3 | 2.2e-3 | 5.0e-4 | 1.2e-4 | 2.0 |
+| 4, sup (nodes) | 3.7e-3 | 2.0e-3 | 6.7e-4 | 1.9e-4 | 1.8 |
+| 10, $L^2$ | 1.4e-2 | 3.7e-3 | 9.3e-4 | 2.3e-4 | 2.0 |
+| 10, sup (nodes) | 3.4e-3 | 2.4e-3 | 9.9e-4 | 5.4e-4 | 0.9 |
 
-The error is concentrated at the origin, where $u$ is only $C^{1,\alpha}$ for $p\neq2$ (regularity degrades as $p$ grows), so the observed
-order in $L^\infty$ can be below 2 for large $p$; in $L^2$ it is about 2. The $p=2$ row recovers the standard P1 rate.
+The error is concentrated at the origin, where $u$ is only $C^{1,\alpha}$ for $p\neq2$,
+so the sup order at the nodes can be below 2 for large $p$; the true $L^2$ order is about 2 for all $p$ tested. The $p=2$ row recovers the standard P1 rate.
 
 ## Order of convergence in h and behaviour as p -> 1
 
@@ -169,20 +177,26 @@ python examples/convergence_order.py --ps 1.05 1.1 1.15 --h 0.1 0.05 0.025 0.012
 
 ![order](docs/convergence_order.png)
 
-| p | 1.05 | 1.1 | 1.15 | 1.2 | 1.3 | 1.5 | 1.75 | 2 | 3 | 4 | 6 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| $t$ in $L^2$ | 2.04 | 1.88 | 1.95 | 1.98 | 2.04 | 2.10 | 2.27 | 2.55 | 2.24 | 2.15 | 2.00 |
-| $t$ in $L^p$ | 2.04 | 1.88 | 1.94 | 1.96 | 2.02 | 2.09 | 2.26 | 2.55 | 2.12 | 1.94 | 1.67 |
-| $t$ in $\lVert\nabla(u-u_h)\rVert_{L^p}$ | 1.02 | 1.02 | 1.02 | 1.03 | 1.03 | 1.05 | 1.16 | 1.61 | 1.07 | 0.97 | 0.88 |
+**Which error?** Differences of nodal values, $\lVert I_hu-u_h\rVert$, are *not* the finite-element error: P1 is superclose at the nodes
+and these differences converge faster than $h^2$ (they gave spurious orders 2.1-2.5 in an earlier version of this README). The orders below use the
+true errors, computed with quadrature (`fem.l2_error`, `fem.grad_error_Lp`); the gradient error is measured in $L^p$.
 
-The observed $L^2$ order is about 2 for every p tested, including p close to 1; what degrades as p -> 1 is the constant (a boundary layer of width ~ p-1
-needs h << p-1 to be resolved) and the speed of the iteration. Caveats: for p <= 1.15 the stopping criterion `rel_u < 1e-9` was not always reached
-within 6000 iterations (column `converged` in the CSV), although the error with respect to the exact solution no longer changes; `disk_mesh` produces
-slightly irregular meshes, so orders between consecutive meshes fluctuate.
+| p | 1.1 | 1.2 | 1.3 | 1.5 | 2 | 3 | 4 | 6 |
+|---|---|---|---|---|---|---|---|---|
+| $t$ in $L^2$ | 1.84 (*) | 1.98 (*) | 2.00 | 2.01 | 2.00 | 2.00 | 2.00 | 2.00 |
+| $t$ in $\lVert\nabla(u-u_h)\rVert_{L^p}$ | 1.01 | 1.02 | 1.02 | 1.02 | 1.02 | 1.00 | 0.82 | 0.46 |
 
-`examples/p_to_1_iteration.py` studies the iteration itself ($-\Delta_p u=2$ on the disk): the contraction factor $\rho(p)$ of the residual
-$\lVert\nabla u_n-\nu_n\rVert$ is 0 at p=2 (the problem is linear), about 0.5-0.8 for 1.8 <= p <= 6, and then grows to 0.92 (p=1.5),
-0.994 (p=1.3) and 0.9995 (p=1.1, 1.05). The parameter r helps only partially (for p=1.1, r=3 needs about half the iterations of r=1).
+(*) the iteration did not reach the tolerance (`rel_u < 1e-9`, 6000 iterations) on the finest meshes: the flag is `False` in the CSV, so these two values are
+indicative only. For p ≥ 1.3 the $L^2$ order is 2, as for the Poisson problem; the gradient order is about 1 up to p = 3 and degrades for large p, where $u$ has little
+regularity at the origin ($u\in C^{1,1/(p-1)}$ is not even $C^2$; note $u\sim 1-r^{p/(p-1)}$).
+What degrades as p → 1 is the constant (a boundary layer of width ~ p-1 must be resolved, so $h\ll p-1$ is needed) and the speed of the iteration.
+`disk_mesh` produces slightly irregular meshes, so orders between consecutive meshes fluctuate.
+
+`examples/p_to_1_iteration.py` studies the iteration itself ($-\Delta_p u=2$ on the disk, h = 0.05): the contraction factor $\rho(p)$ of the residual
+$\lVert\nabla u_n-\nu_n\rVert$ is exactly 1/2 at p=2 (the iteration is a linear fixed-point map there; it is the optimum over the values of p),
+about 0.5-0.8 for 1.8 <= p <= 6, and then grows to 0.92 (p=1.5), 0.994 (p=1.3) and 0.9995 (p=1.1, 1.05).
+Iterations to `rel_u < 1e-8`: 26 (p=2.5), 28 (1.8), 35 (1.6), 40 (1.5), 48 (1.4), 89 (1.3), 200 (1.2), 680 (1.1), 2113 (1.05).
+The parameter r helps only partially (for p=1.1, r=3 needs about half the iterations of r=1).
 
 ![iteration](docs/p_to_1_iteration.png)
 
@@ -198,21 +212,22 @@ python examples/variable_p_convergence.py example3        # Example 3 of the pap
 ```
 
 For radial torsion, $u'(r)=-(r/2)^{1/(p(r)-1)}$, so $u(r)=\int_r^1 (s/2)^{1/(p(s)-1)}ds$ is exact even when $p$ jumps.
-Relative errors on the unit disk (`stop="rel_u"`, tol 1e-10); order $t$ in $\lVert u-u_h\rVert\sim h^t$ from the 3 finest meshes:
+True relative $L^2$ errors (quadrature) and sup errors at the nodes, tolerance `rel_u` 1e-10; order $t$ in $\lVert u-u_h\rVert\sim h^t$ from the 3 finest meshes:
 
-| case | $t$ in $L^2$ | $t$ in $L^\infty$ |
+| case | $t$ in $L^2$ | $t$ in sup (nodes) |
 |---|---|---|
-| smooth $p=2+0.8x$ | 2.08 | 1.72 (noisy) |
-| radial, $p=1.5+1.5r$ | 2.29 | 2.03 |
+| smooth $p=2+0.8x$ | 2.04 | 1.72 (noisy) |
+| radial, $p=1.5+1.5r$ | 2.00 | 2.03 |
 | Example 3 (squares) | 2.00 | 2.00 |
-| radial, **discontinuous** $p$ | 1.45 (≈1 on the finest pair) | 0.90 |
+| radial, **discontinuous** $p$ | 1.49 (orders between consecutive meshes: 2.5, 0.6, 1.9, 1.1) | 0.90 |
 
 * For smooth $p(x)$ the method keeps the optimal P1 order 2 in $L^2$, also when $p$ crosses 2.
-* In Example 3 the error stagnation seen with `tol=1e-5…1e-7` is only the stopping tolerance: with `tol=1e-10` the order is exactly 2
-  (sup error 9.5e-8 for 160x160 cells).
-* With a **discontinuous** exponent whose jump is not aligned with the mesh, the order drops to about 1. Sampling $p$ at the barycentre
-  contributes to this: replacing it by the average of $p$ over each triangle (8x8 sub-points) reduced the errors by a factor 2-4 at the same $h$,
-  but the observed order stayed close to 1 (the limit comes from the unresolved interface).
+* In Example 3 the error stagnation seen with `tol=1e-5…1e-7` is the stopping tolerance: with `tol=1e-10` the order is 2
+  (true relative $L^2$ error 9.0e-6 and nodal sup error 9.5e-8 for 160x160 cells; the nodal differences are much smaller than the true error because of supercloseness).
+* With a **discontinuous** exponent whose jump is not aligned with the mesh, the order drops (about 1.5 in $L^2$, 0.9 at the nodes) and is erratic.
+  Sampling $p$ at the barycentre contributes: `examples/p_sampling_diagnostic.py` compares barycentric, arithmetic (8x8 sub-points) and harmonic averages of $p$ per triangle.
+  Sub-triangle averaging reduces the true $L^2$ error by a factor 1.5-2.5 at the same $h$ (e.g. 5.7e-4 vs 7.9e-4 at h=0.0125) and the order
+  at the nodes is similar (0.96-0.97); the order stays limited by the unresolved interface.
 
 ## Tests
 
@@ -229,8 +244,8 @@ Found while porting; none affects the algorithm, but you may want to fix them in
 
 1. **Notation.** In the MatLab code `lambda` is the multiplier $\eta$ and `eta` is $\nu$.
 2. **Sign in §3.2.** The text defines `h(k)=∫(η−ν)·∇φ_k` and solves `A u = h + f`. The code (and the weak form of eq. (2.2)) use $\int(\nu-\eta)\cdot\nabla\phi_k$, i.e. $b=f+\int(\nu-\eta)\cdot\nabla\phi$.
-3. **Example 2.** For $p=1.1$ the exact solution has maximum $c_p\approx 9\times10^{-5}$, so errors of order $10^{-4}$ would be larger than the solution; the errors obtained here are ~1e-5. Worth double-checking the reported values.
-4. **Stopping criterion.** The text describes the $p$-error; the MatLab `solver.m` uses the relative Euclidean change of $u$ with tolerance 1e-5. Both are available here (`stop=`). With `rel_u`, tolerance 1e-5 is not tight enough for Example 3 (error ≈ 1e-3 vs 1.9e-5 at 1e-7).
+3. **Example 2.** For $p=1.1$ the exact solution has maximum $c_p\approx 9\times10^{-5}$. With the reported setting (100x100 grid, `p_error` < 1e-8) we get a sup error of 1.4e-5, i.e. 16% of the maximum, and the iteration is still moving (1.3% after 4000 iterations): the error is mostly iteration error. The absolute `p_error` criterion is not adequate for such small solutions; use a relative criterion and many more iterations. Worth double-checking the reported values.
+4. **Stopping criterion.** The text describes the $p$-error ($J_p(\Delta u)^{1/\max p}$, which is not a norm and is absolute); the MatLab `solver.m` uses the relative Euclidean change of $u$ with tolerance 1e-5. Both are available here (`stop=`). With `rel_u`, tolerance 1e-5 is not tight enough for Example 3 (error ≈ 1e-3 vs 1.9e-5 at 1e-7); neither criterion is adequate for p close to 1 or for tiny solutions, where the iteration converges slowly (see $\rho(p)$ above).
 5. **Example 4.** The caption says $p=1.15$ but the file is named `torsion_p1_5`.
 6. `solver.m` re-factorises the matrix at every iteration (`AA\b`), which is where most of the MatLab time goes; here it is factorised once.
 

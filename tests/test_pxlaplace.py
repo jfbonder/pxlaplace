@@ -61,3 +61,18 @@ def test_random_init_same_limit():
     a = PxLaplaceSolver(m, 3.0, 1.0, 0.0).solve(tol=1e-9)
     b = PxLaplaceSolver(m, 3.0, 1.0, 0.0).solve(tol=1e-9, init="random")
     assert np.abs(a.u - b.u).max() < 1e-6
+
+
+def test_true_errors_quadrature():
+    m = rectangle_mesh(10)
+    fem = P1Space(m)
+    # exact solution representable in P1 -> zero error
+    lin = lambda x, y: 1 + 2 * x - 3 * y
+    assert fem.l2_error(lin(*m.vertices.T), lin, relative=False) < 1e-14
+    assert fem.grad_error_Lp(lin(*m.vertices.T), lambda x, y: (2 + 0 * x, -3 + 0 * x), 3.0, relative=False) < 1e-14
+    # ||x^2||_{L2(0,1)^2} = 1/sqrt(5) ; uh = 0
+    sq = lambda x, y: x**2 + 0 * y
+    assert np.isclose(fem.l2_error(np.zeros(m.n_nodes), sq, relative=False), 1 / np.sqrt(5))
+    # true error of the P1 interpolant of x^2 is O(h^2) and larger than the nodal error (which is 0)
+    e = fem.l2_error(sq(*m.vertices.T), sq, relative=False)
+    assert 0 < e < 0.02 and fem.norm_L2(sq(*m.vertices.T) - sq(*m.vertices.T)) == 0
