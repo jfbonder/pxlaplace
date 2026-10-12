@@ -157,6 +157,35 @@ Errors ($h$ = target edge length, `stop="p_error"`, tol 1e-9):
 The error is concentrated at the origin, where $u$ is only $C^{1,\alpha}$ for $p\neq2$ (regularity degrades as $p$ grows), so the observed
 order in $L^\infty$ can be below 2 for large $p$; in $L^2$ it is about 2. The $p=2$ row recovers the standard P1 rate.
 
+## Order of convergence in h and behaviour as p -> 1
+
+`examples/convergence_order.py` solves the p-torsion problem on the unit disk for several p on a sequence of meshes and fits
+$\lVert u-u_h\rVert\sim h^t$ (least squares over the 3 finest meshes). Raw data: [`results/convergence_order_torsion_disk.csv`](results/convergence_order_torsion_disk.csv).
+
+```bash
+python examples/convergence_order.py --plot --jobs 2
+python examples/convergence_order.py --ps 1.05 1.1 1.15 --h 0.1 0.05 0.025 0.0125 --tol 1e-9 --max-iter 6000 --jobs 2   # slow
+```
+
+![order](docs/convergence_order.png)
+
+| p | 1.05 | 1.1 | 1.15 | 1.2 | 1.3 | 1.5 | 1.75 | 2 | 3 | 4 | 6 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| $t$ in $L^2$ | 2.04 | 1.88 | 1.95 | 1.98 | 2.04 | 2.10 | 2.27 | 2.55 | 2.24 | 2.15 | 2.00 |
+| $t$ in $L^p$ | 2.04 | 1.88 | 1.94 | 1.96 | 2.02 | 2.09 | 2.26 | 2.55 | 2.12 | 1.94 | 1.67 |
+| $t$ in $\lVert\nabla(u-u_h)\rVert_{L^p}$ | 1.02 | 1.02 | 1.02 | 1.03 | 1.03 | 1.05 | 1.16 | 1.61 | 1.07 | 0.97 | 0.88 |
+
+The observed $L^2$ order is about 2 for every p tested, including p close to 1; what degrades as p -> 1 is the constant (a boundary layer of width ~ p-1
+needs h << p-1 to be resolved) and the speed of the iteration. Caveats: for p <= 1.15 the stopping criterion `rel_u < 1e-9` was not always reached
+within 6000 iterations (column `converged` in the CSV), although the error with respect to the exact solution no longer changes; `disk_mesh` produces
+slightly irregular meshes, so orders between consecutive meshes fluctuate.
+
+`examples/p_to_1_iteration.py` studies the iteration itself ($-\Delta_p u=2$ on the disk): the contraction factor $\rho(p)$ of the residual
+$\lVert\nabla u_n-\nu_n\rVert$ is 0 at p=2 (the problem is linear), about 0.5-0.8 for 1.8 <= p <= 6, and then grows to 0.92 (p=1.5),
+0.994 (p=1.3) and 0.9995 (p=1.1, 1.05). The parameter r helps only partially (for p=1.1, r=3 needs about half the iterations of r=1).
+
+![iteration](docs/p_to_1_iteration.png)
+
 ## Tests
 
 ```bash
