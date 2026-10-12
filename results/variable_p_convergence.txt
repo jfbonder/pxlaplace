@@ -1,0 +1,37 @@
+# Variable-p convergence (examples/variable_p_convergence.py), disk meshes from disk_mesh(h), tol=1e-10
+
+## smooth: p=2+0.8x, u=exp(x/2)(1+y/2)
+       h   nodes  iter  conv     L2 rel   ord    sup rel   ord
+  0.2000      88    36  True   2.71e-04     -   4.25e-04     -
+  0.1000     362    36  True   4.56e-05  2.57   1.08e-04  1.97
+  0.0500    1452    36  True   8.43e-06  2.44   2.00e-05  2.44
+  0.0250    5809    36  True   1.94e-06  2.12   5.05e-06  1.98
+  0.0125   23227    36  True   4.69e-07  2.05   1.83e-06  1.46
+fitted order (finest 3): L2 2.08   sup 1.72
+
+## radial torsion, p jump (1.5 | 3 at r=0.5)
+       h   nodes  iter  conv     L2 rel   ord    sup rel   ord
+  0.2000      88   129  True   3.47e-02     -   5.56e-02     -
+  0.1000     362   169  True   7.40e-03  2.23   2.56e-02  1.12
+  0.0500    1452   132  True   5.58e-03  0.41   1.37e-02  0.90
+  0.0250    5809    81  True   1.47e-03  1.92   7.80e-03  0.81
+  0.0125   23227    50  True   7.43e-04  0.99   3.94e-03  0.98
+fitted order (finest 3): L2 1.45   sup 0.90
+
+## radial torsion, p=1.5+1.5r
+       h   nodes  iter  conv     L2 rel   ord    sup rel   ord
+  0.2000      88    46  True   4.34e-03     -   8.66e-03     -
+  0.1000     362    92  True   6.82e-04  2.67   1.76e-03  2.30
+  0.0500    1452   151  True   1.45e-04  2.23   3.90e-04  2.17
+  0.0250    5809   113  True   2.59e-05  2.48   9.52e-05  2.04
+  0.0125   23227    45  True   6.09e-06  2.09   2.33e-05  2.03
+fitted order (finest 3): L2 2.29   sup 2.03
+
+## Example 3 of the paper on (-1,1)^2, n x n cells (h=2/n)
+       h   nodes  iter  conv     L2 rel   ord    sup rel   ord
+  0.2000     121   155  True   4.99e-05     -   2.40e-05     -
+  0.1000     441   158  True   1.27e-05  1.98   6.05e-06  1.99
+  0.0500    1681   159  True   3.18e-06  1.99   1.52e-06  2.00
+  0.0250    6561   159  True   7.95e-07  2.00   3.79e-07  2.00
+  0.0125   25921   160  True   1.99e-07  2.00   9.49e-08  2.00
+fitted order (finest 3): L2 2.00   sup 2.00

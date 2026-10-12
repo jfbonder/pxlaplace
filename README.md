@@ -186,6 +186,34 @@ $\lVert\nabla u_n-\nu_n\rVert$ is 0 at p=2 (the problem is linear), about 0.5-0.
 
 ![iteration](docs/p_to_1_iteration.png)
 
+## Variable exponent p(x): convergence with explicit solutions
+
+`examples/variable_p_convergence.py` (needs `sympy` for the first case; raw output in [`results/variable_p_convergence.txt`](results/variable_p_convergence.txt)):
+
+```bash
+python examples/variable_p_convergence.py smooth          # manufactured solution, p = 2 + 0.8x (crosses p = 2)
+python examples/variable_p_convergence.py radial --prad jump   # torsion with p = 1.5 (r<0.5), 3 (r>0.5): exact solution
+python examples/variable_p_convergence.py radial --prad lin    # torsion with p = 1.5 + 1.5 r
+python examples/variable_p_convergence.py example3        # Example 3 of the paper on refined squares
+```
+
+For radial torsion, $u'(r)=-(r/2)^{1/(p(r)-1)}$, so $u(r)=\int_r^1 (s/2)^{1/(p(s)-1)}ds$ is exact even when $p$ jumps.
+Relative errors on the unit disk (`stop="rel_u"`, tol 1e-10); order $t$ in $\lVert u-u_h\rVert\sim h^t$ from the 3 finest meshes:
+
+| case | $t$ in $L^2$ | $t$ in $L^\infty$ |
+|---|---|---|
+| smooth $p=2+0.8x$ | 2.08 | 1.72 (noisy) |
+| radial, $p=1.5+1.5r$ | 2.29 | 2.03 |
+| Example 3 (squares) | 2.00 | 2.00 |
+| radial, **discontinuous** $p$ | 1.45 (≈1 on the finest pair) | 0.90 |
+
+* For smooth $p(x)$ the method keeps the optimal P1 order 2 in $L^2$, also when $p$ crosses 2.
+* In Example 3 the error stagnation seen with `tol=1e-5…1e-7` is only the stopping tolerance: with `tol=1e-10` the order is exactly 2
+  (sup error 9.5e-8 for 160x160 cells).
+* With a **discontinuous** exponent whose jump is not aligned with the mesh, the order drops to about 1. Sampling $p$ at the barycentre
+  contributes to this: replacing it by the average of $p$ over each triangle (8x8 sub-points) reduced the errors by a factor 2-4 at the same $h$,
+  but the observed order stayed close to 1 (the limit comes from the unresolved interface).
+
 ## Tests
 
 ```bash
