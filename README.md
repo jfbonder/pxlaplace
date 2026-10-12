@@ -157,4 +157,4 @@ If you use this code, please cite the paper above.
 
 ## License
 
-No license has been set yet — add one (e.g. MIT) before others reuse the code.
+MIT — see [`LICENSE`](LICENSE).
