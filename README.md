@@ -8,9 +8,11 @@ $$
 -\mathrm{div}\!\big(|\nabla u|^{p(x)-2}\nabla u\big)=f \ \text{ in }\Omega\subset\mathbb R^2,\qquad u=g\ \text{ on }\partial\Omega ,
 $$
 
-with piecewise-linear (P1) finite elements. It is a vectorised port of the MatLab code that accompanies
+with piecewise-linear (P1) finite elements. This is the **Python version** (a vectorised port) of the MatLab code that accompanies the paper
 
-> A. Aragón, J. Fernández Bonder, D. Rubio, *Effective numerical computation of p(x)-Laplace equations in 2D* (paper in [`paper/`](paper)). A rewritten, updated version of the paper (new implementation and experiments) is in [`paper/v2/`](paper/v2).
+> A. Aragón, J. Fernández Bonder and D. Rubio, *Effective numerical computations of p(x)-Laplace equations in 2D*, Int. J. Comput. Math. 100 (2023), no. 11, 2111–2123.
+
+The paper is in [`paper/`](paper). A rewritten, updated version of the paper (new implementation and experiments) is in [`paper/v2/`](paper/v2).
 
 The original code worked on rectangles only; here **the solver is independent of the domain**: it only needs a triangulation.
 
