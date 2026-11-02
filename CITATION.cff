@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "pxlaplace: p(x)-Laplacian solver on general 2D domains"
+type: software
+authors:
+  - family-names: "Aragón"
+    given-names: "Adriana"
+  - family-names: "Fernández Bonder"
+    given-names: "Julián"
+  - family-names: "Rubio"
+    given-names: "Diana"
+license: MIT
+repository-code: "https://github.com/jfbonder/pxlaplace"
+preferred-citation:
+  type: article
+  title: "Effective numerical computations of p(x)-Laplace equations in 2D"
+  authors:
+    - family-names: "Aragón"
+      given-names: "Adriana"
+    - family-names: "Fernández Bonder"
+      given-names: "Julián"
+    - family-names: "Rubio"
+      given-names: "Diana"
+  journal: "International Journal of Computer Mathematics"
+  volume: 100
+  issue: 11
+  start: 2111
+  end: 2123
+  year: 2023
+  notes: "arXiv:2204.08054"

@@ -253,7 +253,22 @@ Found while porting; none affects the algorithm, but you may want to fix them in
 
 ## Citation
 
-If you use this code, please cite the paper above.
+If you use this code, please cite the paper:
+
+```bibtex
+@article{AragonFernandezBonderRubio2023,
+  author  = {Arag{\'o}n, Adriana and Fern{\'a}ndez Bonder, Juli{\'a}n and Rubio, Diana},
+  title   = {Effective numerical computations of $p(x)$-{L}aplace equations in 2{D}},
+  journal = {International Journal of Computer Mathematics},
+  volume  = {100},
+  number  = {11},
+  pages   = {2111--2123},
+  year    = {2023},
+  note    = {arXiv:2204.08054}
+}
+```
+
+GitHub's "Cite this repository" button uses [`CITATION.cff`](CITATION.cff).
 
 ## License
 
